@@ -41,7 +41,7 @@ class TransactionCreate(BaseModel):
     user_id: str = Field(..., description="User ID")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "amount": 1250.50,
                 "merchant": "Online Store XYZ",
