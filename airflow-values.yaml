@@ -9,9 +9,16 @@ airflow:
 postgresql:
   enabled: true
   image:
-    registry: docker.io
-    repository: bitnami/postgresql
-    tag: 15
+    repository: postgres
+    tag: "15"
+  auth:
+    username: airflow
+    password: airflow
+    database: airflow
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
 
 redis:
   enabled: false
