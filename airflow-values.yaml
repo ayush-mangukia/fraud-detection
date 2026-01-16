@@ -8,17 +8,12 @@ airflow:
 
 postgresql:
   enabled: true
-  image:
-    repository: postgres
-    tag: "15"
   auth:
-    username: airflow
-    password: airflow
-    database: airflow
-  primary:
-    persistence:
-      enabled: true
-      size: 8Gi
+    existingSecret: airflow-postgresql
+    secretKeys:
+      adminPasswordKey: postgres-password
+      userPasswordKey: postgres-password
+
 
 redis:
   enabled: false
