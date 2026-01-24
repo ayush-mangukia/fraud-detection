@@ -6,9 +6,19 @@ airflow:
     tag: 2.8.4
     pullPolicy: IfNotPresent
 
+# Use chart-managed Postgres for Airflow metadata DB (RECOMMENDED for minikube/dev)
 postgresql:
-  enabled: false
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnami/postgresql
+    tag: latest
+  auth:
+    username: airflow
+    password: airflow123
+    database: airflow
 
+# Not needed for KubernetesExecutor
 redis:
   enabled: false
 
@@ -16,21 +26,16 @@ webserver:
   service:
     type: NodePort
 
+# Persist logs? (optional)
 logs:
   persistence:
     enabled: false
 
-data:
-  metadataConnection:
-    user: airflow
-    pass: airflow123
-    protocol: postgresql
-    host: postgres-postgresql
-    port: 5432
-    db: airflow
-    sslmode: disable
+# --------------------------
+# Shared PVC for pipeline data
+# --------------------------
 
-# Persistent Volume Claim for pipeline data
+# Mount PVC into Airflow core components
 scheduler:
   extraVolumes:
     - name: pipeline-data
@@ -41,15 +46,6 @@ scheduler:
       mountPath: /data
 
 webserver:
-  extraVolumes:
-    - name: pipeline-data
-      persistentVolumeClaim:
-        claimName: pipeline-data
-  extraVolumeMounts:
-    - name: pipeline-data
-      mountPath: /data
-
-workers:
   extraVolumes:
     - name: pipeline-data
       persistentVolumeClaim:
@@ -73,5 +69,15 @@ dagProcessor:
       persistentVolumeClaim:
         claimName: pipeline-data
   extraVolumeMounts:
+    - name: pipeline-data
+      mountPath: /data
+
+# IMPORTANT: This makes KubernetesExecutor TASK PODS mount the PVC too
+kubernetes:
+  volumes:
+    - name: pipeline-data
+      persistentVolumeClaim:
+        claimName: pipeline-data
+  volumeMounts:
     - name: pipeline-data
       mountPath: /data
