@@ -1,29 +1,16 @@
-# Backend Dockerfile
-FROM python:3.11-slim
+FROM apache/airflow:2.8.0
 
-WORKDIR /app
-
-# Install system dependencies
+# Install system dependencies for LightGBM and other packages
+USER root
 RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
+    libgomp1 \
+    build-essential \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY requirements.txt .
+# Switch back to airflow user
+USER airflow
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
-COPY backend/ ./backend/
-COPY ml_model/ ./ml_model/
-
-# Expose port
-EXPOSE 8000
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-
-# Run the application
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Copy and install Python requirements
+COPY requirements-airflow.txt /tmp/
+RUN pip install --no-cache-dir -r /tmp/requirements-airflow.txt
