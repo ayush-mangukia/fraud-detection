@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  # PostgreSQL Database (used by backend + airflow)
+  # PostgreSQL Database (used by backend + airflow) — SINGLE DB ONLY
   postgres:
     image: postgres:15
     environment:
@@ -13,10 +13,10 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fraud_user}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fraud_user} -d ${POSTGRES_DB:-fraud_detection}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   # FastAPI Backend
   backend:
@@ -34,7 +34,7 @@ services:
       - ./backend:/app/backend
       - ./ml_model:/app/ml_model
 
-  # Frontend
+  # Frontend (simple static server)
   frontend:
     image: python:3.11-slim
     working_dir: /app
@@ -50,61 +50,16 @@ services:
       context: .
       dockerfile: Dockerfile.airflow
     entrypoint: /bin/bash
-    command: -c "
-      airflow db migrate &&
-      airflow users create
-        --username ${AIRFLOW_ADMIN_USER:-airflow}
-        --password ${AIRFLOW_ADMIN_PASSWORD:-airflow}
-        --firstname Air
-        --lastname Flow
-        --role Admin
-        --email ${AIRFLOW_ADMIN_EMAIL:-airflow@example.com}
-      "
+    command: |
+      set -e
+      airflow db migrate
+      airflow users create \
+        --username "${AIRFLOW_ADMIN_USER:-airflow}" \
+        --password "${AIRFLOW_ADMIN_PASSWORD:-airflow}" \
+        --firstname Air \
+        --lastname Flow \
+        --role Admin \
+        --email "${AIRFLOW_ADMIN_EMAIL:-airflow@example.com}" || true
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-fraud_user}:${POSTGRES_PASSWORD:-fraud_pass}@postgres:5432/${AIRFLOW_DB:-airflow}
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  # Airflow Webserver
-  airflow-webserver:
-    build:
-      context: .
-      dockerfile: Dockerfile.airflow
-    command: airflow webserver
-    ports:
-      - "8080:8080"
-    environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-fraud_user}:${POSTGRES_PASSWORD:-fraud_pass}@postgres:5432/${AIRFLOW_DB:-airflow}
-    volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
-    depends_on:
-      airflow-init:
-        condition: service_completed_successfully
-      backend:
-        condition: service_started
-
-  # Airflow Scheduler
-  airflow-scheduler:
-    build:
-      context: .
-      dockerfile: Dockerfile.airflow
-    command: airflow scheduler
-    environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-fraud_user}:${POSTGRES_PASSWORD:-fraud_pass}@postgres:5432/${AIRFLOW_DB:-airflow}
-    volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
-    depends_on:
-      airflow-webserver:
-        condition: service_started
-
-volumes:
-  postgres_data:
+      AIRFLOW__COR
