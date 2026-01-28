@@ -8,6 +8,7 @@ import numpy as np
 import json
 import hashlib
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional
@@ -16,7 +17,7 @@ import mlflow
 import mlflow.lightgbm
 from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.metrics import roc_auc_score
-from src.utils import load_config
+from utils import load_config
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,8 @@ class ModelTrainer:
         self.models = []
         
         # Set up MLflow tracking
-        mlflow_uri = config.get('mlflow', {}).get('tracking_uri', 'file:./mlruns')
+        # First try environment variable, then config, then default
+        mlflow_uri = os.getenv('MLFLOW_TRACKING_URI') or config.get('mlflow', {}).get('tracking_uri', 'file:./mlruns')
         mlflow.set_tracking_uri(mlflow_uri)
         logger.info(f"MLflow tracking URI set to: {mlflow_uri}")
         
