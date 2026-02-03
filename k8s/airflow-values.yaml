@@ -1,24 +1,160 @@
+# executor: KubernetesExecutor
+
+# # Default airflow image for all components
+# defaultAirflowRepository: fraud-detection-airflow
+# defaultAirflowTag: latest
+# images:
+#   airflow:
+#     repository: fraud-detection-airflow
+#     tag: latest
+#     pullPolicy: Never
+#   # Use default image for migrations to avoid issues
+#   migrationsWaitTimeout: 120  # Increase timeout
+
+# # Old format for compatibility
+# airflow:
+#   image:
+#     repository: fraud-detection-airflow
+#     tag: latest
+#     pullPolicy: Never  # Use local image from Minikube
+
+# # Use default image for migration job
+# migrateDatabaseJob:
+#   enabled: true
+#   useHelmHooks: true
+
+
+# # DAGs are baked into the image, don't use git-sync or PVC
+# dags:
+#   persistence:
+#     enabled: false  # Don't mount external DAGs volume
+#   gitSync:
+#     enabled: false  # Don't use git-sync
+
+# # Use chart-managed Postgres for Airflow metadata DB (RECOMMENDED for minikube/dev)
+# postgresql:
+#   enabled: true
+#   image:
+#     registry: docker.io
+#     repository: bitnami/postgresql
+#     tag: latest
+#   auth:
+#     username: airflow
+#     password: airflow123
+#     database: airflow
+
+# # Not needed for KubernetesExecutor
+# redis:
+#   enabled: false
+
+# webserver:
+#   service:
+#     type: NodePort
+
+# # Persist logs? (optional)
+# logs:
+#   persistence:
+#     enabled: false
+
+# # --------------------------
+# # Shared PVC for pipeline data
+# # --------------------------
+
+# # Mount PVC into Airflow core components
+# scheduler:
+#   extraVolumes:
+#     - name: fraud-data
+#       persistentVolumeClaim:
+#         claimName: fraud-data-pvc
+#   extraVolumeMounts:
+#     - name: fraud-data
+#       mountPath: /opt/airflow/data
+
+# webserver:
+#   extraVolumes:
+#     - name: fraud-data
+#       persistentVolumeClaim:
+#         claimName: fraud-data-pvc
+#   extraVolumeMounts:
+#     - name: fraud-data
+#       mountPath: /opt/airflow/data
+
+# triggerer:
+#   extraVolumes:
+#     - name: fraud-data
+#       persistentVolumeClaim:
+#         claimName: fraud-data-pvc
+#   extraVolumeMounts:
+#     - name: fraud-data
+#       mountPath: /opt/airflow/data
+
+# dagProcessor:
+#   extraVolumes:
+#     - name: fraud-data
+#       persistentVolumeClaim:
+#         claimName: fraud-data-pvc
+#   extraVolumeMounts:
+#     - name: fraud-data
+#       mountPath: /opt/airflow/data
+
+# # IMPORTANT: This makes KubernetesExecutor TASK PODS mount the PVC too
+# kubernetes:
+#   volumes:
+#     - name: fraud-data
+#       persistentVolumeClaim:
+#         claimName: fraud-data-pvc
+#   volumeMounts:
+#     - name: fraud-data
+#       mountPath: /opt/airflow/data
+
+##========================================================
+##Simple chatgpt yaml
 executor: KubernetesExecutor
+
+images:
+  airflow:
+    repository: fraud-detection-airflow
+    tag: v1
+    pullPolicy: Never
 
 airflow:
   image:
-    repository: apache/airflow
-    tag: 2.8.4
-    pullPolicy: IfNotPresent
+    repository: fraud-detection-airflow
+    tag: v1
+    pullPolicy: Never
 
-# Use chart-managed Postgres for Airflow metadata DB (RECOMMENDED for minikube/dev)
+migrateDatabaseJob:
+  enabled: true
+  useHelmHooks: true
+
+dags:
+  persistence:
+    enabled: false
+  gitSync:
+    enabled: false
+
 postgresql:
   enabled: true
   image:
-    registry: docker.io
     repository: bitnami/postgresql
     tag: latest
+    pullPolicy: IfNotPresent
   auth:
     username: airflow
     password: airflow123
     database: airflow
 
-# Not needed for KubernetesExecutor
+# Explicitly configure connection to PostgreSQL
+data:
+  metadataConnection:
+    user: airflow
+    pass: airflow123
+    protocol: postgresql
+    host: ~
+    port: 5432
+    db: airflow
+    sslmode: disable
+
 redis:
   enabled: false
 
@@ -26,58 +162,16 @@ webserver:
   service:
     type: NodePort
 
-# Persist logs? (optional)
 logs:
   persistence:
     enabled: false
 
-# --------------------------
-# Shared PVC for pipeline data
-# --------------------------
-
-# Mount PVC into Airflow core components
-scheduler:
-  extraVolumes:
-    - name: pipeline-data
-      persistentVolumeClaim:
-        claimName: pipeline-data
-  extraVolumeMounts:
-    - name: pipeline-data
-      mountPath: /data
-
-webserver:
-  extraVolumes:
-    - name: pipeline-data
-      persistentVolumeClaim:
-        claimName: pipeline-data
-  extraVolumeMounts:
-    - name: pipeline-data
-      mountPath: /data
-
-triggerer:
-  extraVolumes:
-    - name: pipeline-data
-      persistentVolumeClaim:
-        claimName: pipeline-data
-  extraVolumeMounts:
-    - name: pipeline-data
-      mountPath: /data
-
-dagProcessor:
-  extraVolumes:
-    - name: pipeline-data
-      persistentVolumeClaim:
-        claimName: pipeline-data
-  extraVolumeMounts:
-    - name: pipeline-data
-      mountPath: /data
-
-# IMPORTANT: This makes KubernetesExecutor TASK PODS mount the PVC too
 kubernetes:
   volumes:
-    - name: pipeline-data
+    - name: fraud-data
       persistentVolumeClaim:
-        claimName: pipeline-data
+        claimName: fraud-data-pvc
   volumeMounts:
-    - name: pipeline-data
-      mountPath: /data
+    - name: fraud-data
+      mountPath: /opt/airflow/data
+
