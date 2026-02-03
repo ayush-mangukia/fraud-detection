@@ -2,16 +2,16 @@
 
 # Data paths
 data:
-  raw_data_dir: "data/unzipped"
-  processed_data_dir: "data/processed"
+  raw_data_dir: "/opt/airflow/data/unzipped"
+  processed_data_dir: "/opt/airflow/data/processed"
   #Initial ingestion from IEEE Data
-  train_transaction: "data/unzipped/train_transaction.csv"
-  train_identity: "data/unzipped/train_identity.csv"
-  test_transaction: "data/unzipped/test_transaction.csv"
-  test_identity: "data/unzipped/test_identity.csv"
+  train_transaction: "/opt/airflow/data/unzipped/train_transaction.csv"
+  train_identity: "/opt/airflow/data/unzipped/train_identity.csv"
+  test_transaction: "/opt/airflow/data/unzipped/test_transaction.csv"
+  test_identity: "/opt/airflow/data/unzipped/test_identity.csv"
   #===========================
-  output_dir: "output"
-  models_dir: "models"
+  output_dir: "/opt/airflow/data/output"
+  models_dir: "/opt/airflow/models"
   ingested_subdir: "ingestion"
   train_merged_name: "train_merged.csv"
   test_merged_name: "test_merged.csv"

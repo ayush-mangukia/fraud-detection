@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 def extract_samples(
-    input_path: str = "data/ingestion/train_merged.csv",
-    output_path: str = "data/samples/raw_transactions.csv",
+    input_path: str = "/opt/airflow/data/ingestion/train_merged.csv",
+    output_path: str = "/opt/airflow/data/samples/raw_transactions.csv",
     n_samples: int = 100,
     random_state: int = 42,
 ):
